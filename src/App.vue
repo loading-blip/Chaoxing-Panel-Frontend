@@ -70,8 +70,7 @@ header{
   border-bottom: 1px solid #505050;
 }
 main{
-  padding: 0;
-  padding-left: 10px;
+  padding: 10px 0 0 10px;
 }
 /* aside{
   box-shadow: 3px 3px;
