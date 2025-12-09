@@ -13,6 +13,7 @@ function sleep(ms) {
 return new Promise(resolve => setTimeout(resolve, ms));
 }
 
+// 获取数据
 async function get_data()
 {
     const api = "http://localhost:5000/data"
@@ -30,8 +31,8 @@ async function get_data()
         throw error;
     }
 }
-
-async function get_session(){
+// 发送session请求
+async function post_session(){
     const api = "http://localhost:5000/service"
     const data = JSON.stringify({'use':'get_activity'})
     try{
@@ -50,23 +51,9 @@ async function get_session(){
     }
 }
 
-async function set_data(status){
-    let signal = status
-    await get_data().then((rep_json)=>{
-                        rep_json = JSON.parse(rep_json)     
-                        if (rep_json["code"] === 202){
-                            console.log('获取数据中...')
-                            signal = false
-                        }
-                        tables.value = rep_json["data"]
-                    })
-    console.log(signal)
-    return signal
-    
-}
-
+// 获取状态
 async function get_backend_status() {
-const api = "http://localhost:5000/status"
+    const api = "http://localhost:5000/status"
     try{
         const response = await fetch(api,{
             method: "GET",
@@ -80,61 +67,58 @@ const api = "http://localhost:5000/status"
         throw error;
     }
 }
-//"current_work":"xxxx","current_quantity":0,"quantity":0,"complete":false
 
+//颜色管理
 const tableRowClassName = ({row,}) => {
     return row['status']
 }
 
-async function service(status){
-    let signal = true
-    await set_data(status).then((i)=>{signal=i})
-    console.log(signal)
-    if (signal){
-        ElMessage.primary('已刷新')
-        return 
+async function services(params) {
+    const status_json = JSON.parse(await get_backend_status())
+    console.log(status_json)
+    if (status_json["session"] !== "" && (status_json["status"] === "working" && status_json["session"] !== "get_activity")){
+        ElMessage.warning('后端正在处理其他任务')
+        return
     }
-    get_session().then(async (response)=>{
-        let rep_json = JSON.parse(response)
-        console.log(rep_json)
-        if (rep_json["code"] === 200){
-            ElMessage.primary('成功！')
-            is_ready.value = false
-
-            if (!status){
-                await sleep(1000);
-            }
-
-            const backend = setInterval(() => {
-                get_backend_status().then((status_json)=>{
-                    status_json = JSON.parse(status_json)
-                    is_ready.value = status_json["complete"]
-                    current_work.value = status_json["current_work"]
-                    current_quantity.value = status_json["current_quantity"]
-                    quantity.value = status_json["quantity"]
-                })
-                
-                
-
-                if (is_ready.value){
-                    clearInterval(backend)
-                    set_data()
-                }
-            }, 500);
+    else if (params === 'refresh' && status_json["complete"] && status_json["session"]==="get_activity"){
+        ElMessage.primary('已从后端缓存中获取数据')
+        is_ready.value = false
+        const table_data = JSON.parse(await get_data())
+        tables.value = table_data["data"]
+        is_ready.value = true
+        return
+    }
+    const req = JSON.parse(await post_session())
+    if (req['code']!==200){
+        ElMessage.error('后端错误')
+        throw error('后端错误')
+    }
+    ElMessage.primary('正在获取数据...')
+    is_ready.value = false
+    const Interval = setInterval(async ()=>{
+        const status_json = JSON.parse(await get_backend_status())
+        current_work.value = status_json["current_work"]
+        current_quantity.value = status_json["current_quantity"]
+        quantity.value = status_json["quantity"]
+        
+        if (status_json["complete"]){
+            const result = JSON.parse(await get_data())
+            console.log(result)
+            tables.value = result["data"]
+            is_ready.value = true
+            clearInterval(Interval)
         }
-        else{
-            ElMessage.error('内部错误')
-        }
-    })
+    },500)
+    
 }
 
-// t_head.value = unique(t_head.value)
+
 </script>
 
 <template>
     <div class="button_group">
-        <el-button type="primary" plain @click="service(true)">更新</el-button>
-        <el-button type="info" plain @click="service(false)">重新获取</el-button>
+        <el-button type="primary" plain @click="services('refresh')">更新</el-button>
+        <el-button type="info" plain @click="services('update')">重新获取</el-button>
     </div>
   <el-table 
     v-loading="!is_ready && {text:`${current_quantity}/${quantity}正在获取${current_work}...`}"

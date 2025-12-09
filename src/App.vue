@@ -1,8 +1,7 @@
 <script setup>
-// import HelloWorld from './components/HelloWorld.vue'
-import component from 'element-plus/es/components/tree-select/src/tree-select-option.mjs';
 import ActivityList from './components/ActivityList.vue'
 import DefaultCompose from './components/DefaultComponent.vue'
+import Transcript from './components/Transcript.vue'
 import {shallowRef} from 'vue'
 
 const current_component = shallowRef(DefaultCompose)
@@ -49,12 +48,15 @@ const function_map=[
                   <el-icon><message /></el-icon>信息
                 </template>
                 <el-menu-item index="1-1" @click="current_component = ActivityList">活动列表</el-menu-item>
+                <el-menu-item index="1-2" @click="current_component = Transcript">成绩单</el-menu-item>
               </el-sub-menu>
             </el-menu>
           </el-scrollbar>
         </el-aside>
         <el-main>
-          <component :is="current_component"/>
+          <keep-alive>
+            <component :is="current_component"/>
+          </keep-alive>
         </el-main>
       </el-container>
     </el-container>

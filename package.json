@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "dayjs": "^1.11.19",
+    "echarts": "^6.0.0",
     "element-plus": "^2.11.9",
     "sass-embedded": "^1.93.3",
     "sass-loader": "^16.0.6",
