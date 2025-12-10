@@ -75,7 +75,6 @@ const tableRowClassName = ({row,}) => {
 
 async function services(params) {
     const status_json = JSON.parse(await get_backend_status())
-    console.log(status_json)
     if (status_json["session"] !== "" && (status_json["status"] === "working" && status_json["session"] !== "get_activity")){
         ElMessage.warning('后端正在处理其他任务')
         return
@@ -103,7 +102,6 @@ async function services(params) {
         
         if (status_json["complete"]){
             const result = JSON.parse(await get_data())
-            console.log(result)
             tables.value = result["data"]
             is_ready.value = true
             clearInterval(Interval)
@@ -153,6 +151,9 @@ async function services(params) {
         }
         .great_chance{
             --el-table-tr-bg-color: #008000a0;
+        }
+        .regd{
+            --el-table-tr-bg-color: #5c815ca0;
         }
     }
 
